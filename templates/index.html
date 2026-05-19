@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 股票分析面板 (智谱GLM版)</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--bg); color: var(--text); max-width: 700px; margin: 60px auto; padding: 0 20px; }
+        .container { background: var(--card-bg); padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        h2 { margin-top: 0; color: #0f172a; display: flex; align-items: center; gap: 10px; }
+        .search-box { display: flex; gap: 10px; margin-bottom: 25px; }
+        input { flex: 1; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 16px; text-transform: uppercase; }
+        button { background: var(--primary); color: white; border: none; padding: 12px 24px; border-radius: 6px; font-size: 16px; cursor: pointer; font-weight: 500; transition: background 0.2s; }
+        button:hover { background: #1d4ed8; }
+        .loading { display: none; color: #64748b; font-style: italic; margin-top: 15px; }
+
+        /* 结果卡片样式 */
+        .result-card { display: none; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-top: 25px; background: #fafafa; }
+        .badge { display: inline-block; padding: 4px 12px; border-radius: 9999px; font-size: 14px; font-weight: bold; }
+
+        /* 情绪动态颜色 */
+        .sentiment-Bullish { background: #dcfce7; color: #15803d; }
+        .sentiment-Bearish { background: #fee2e2; color: #b91c1c; }
+        .sentiment-Neutral { background: #f1f5f9; color: #475569; }
+
+        /* 风险动态颜色 */
+        .risk-High { color: #b91c1c; font-weight: bold; }
+        .risk-Medium { color: #d97706; font-weight: bold; }
+        .risk-Low { color: #15803d; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>📈 AI 股票分析面板 <span style="font-size: 14px; color: #64748b; font-weight: normal;">(GLM-4 智谱AI)</span></h2>
+    <div class="search-box">
+        <input type="text" id="symbolInput" placeholder="输入美股代码 (如: AAPL, TSLA, NVDA)">
+        <button onclick="runAnalysis()">开始 AI 分析</button>
+    </div>
+
+    <div id="loadingStatus" class="loading">🧠 智谱大模型正在进行深度思考 (Thinking Mode)... 请稍候...</div>
+
+    <div id="resultCard" class="result-card">
+        <h3 id="resSymbol" style="margin-top:0; font-size: 22px;"></h3>
+        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 15px 0;">
+        <p><strong>市场情绪:</strong> <span id="resSentiment" class="badge"></span></p>
+        <p><strong>风险评估:</strong> <span id="resRisk"></span></p>
+        <p style="line-height: 1.6;"><strong>AI 深度总结:</strong> <span id="resSummary"></span></p>
+    </div>
+</div>
+
+<script>
+async function runAnalysis() {
+    const symbolInput = document.getElementById('symbolInput');
+    const symbol = symbolInput.value.trim();
+    const loading = document.getElementById('loadingStatus');
+    const card = document.getElementById('resultCard');
+
+    if (!symbol) {
+        alert("请输入有效的股票代码！");
+        return;
+    }
+
+    loading.style.display = 'block';
+    card.style.display = 'none';
+
+    try {
+        const response = await fetch('/api/analyze', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ symbol: symbol })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            document.getElementById('resSymbol').innerText = `📊 ${data.symbol} 分析报告`;
+
+            // 设置情绪标记
+            const sentimentSpan = document.getElementById('resSentiment');
+            sentimentSpan.innerText = data.sentiment;
+            sentimentSpan.className = `badge sentiment-${data.sentiment}`;
+
+            // 设置风险标记
+            const riskSpan = document.getElementById('resRisk');
+            riskSpan.innerText = data.risk_level;
+            riskSpan.className = `risk-${data.risk_level}`;
+
+            document.getElementById('resSummary').innerText = data.summary;
+
+            card.style.display = 'block';
+        } else {
+            alert("分析失败: " + (data.error || "未知错误"));
+        }
+    } catch (error) {
+        alert("网络请求失败，请检查后端服务是否正常启动。");
+    } finally {
+        loading.style.display = 'none';
+    }
+}
+</script>
+</body>
+</html>

@@ -5,3 +5,4 @@ pandas
 gunicorn
 python-dotenv
 zai-sdk
+flask-cors
